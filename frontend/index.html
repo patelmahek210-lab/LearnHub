@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LearnHub</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+<a href="index.html">Home</a> |
+<a href="about.html">About</a> |
+<a href="contact.html">Contact</a> |
+
+<span id="authLinks">
+<a href="login.html">Login</a> |
+<a href="register.html">Register</a>
+</span>
+
+<span id="logoutLink" style="display:none;">
+<a href="#" onclick="logout()">Logout</a>
+</span>
+
+</nav>
+
+<hr>
+<!-- LOGIN -->
+<div class="login-container" id="login">
+<h2>LearnHub Login</h2>
+<div class="input-group">
+<input id="name" placeholder="Full Name">
+</div>
+<div class="input-group">
+<input id="email" placeholder="Email">
+</div>
+<div class="input-group">
+<div style="position:relative;width:100%;">
+<input id="password" placeholder="Password" type="password" style="width:100%;padding-right:35px;">
+<span onclick="togglePassword()" id="eyeIcon" style="position:absolute;right:10px;top:8px;cursor:pointer;">👁️</span>
+</div>
+</div>
+<button class="btn" onclick="loginUser()">Sign In</button>
+<button class="btn" style="margin-top:10px;background:#6366f1" onclick="registerUser()">Register</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard" style="display:none;">
+<div class="navbar">
+<h2>LearnHub</h2>
+<div style="display:flex;gap:10px;align-items:center;">
+<div>
+<strong id="profileName">User</strong><br>
+<small>LearnHub Member</small>
+</div>
+<div class="avatar" id="avatarText">U</div>
+<button onclick="logout()">Logout</button>
+</div>
+</div>
+
+<div class="hero">
+<h2>Collaborative Learning Platform</h2>
+<p>Upload, manage and share study materials.</p>
+<button onclick="toggleTheme()">🌙 Toggle Theme</button>
+</div>
+
+<div class="card">
+<h3>Users Online</h3>
+<p id="onlineUsers">0</p>
+</div>
+
+<div class="stats-container">
+
+<div class="stat-card">
+<h3>Total Materials</h3>
+<p id="totalMat">0</p>
+</div>
+
+<div class="stat-card">
+<h3>Total Downloads</h3>
+<p id="totalDownloads">0</p>
+</div>
+
+<div class="stat-card">
+<h3>My Uploads</h3>
+<p id="myUploads">0</p>
+</div>
+
+
+</div>
+
+<div class="card">
+<h3>Top Downloaded Materials</h3>
+<div id="topMaterials"></div>
+</div>
+
+<div class="card">
+<h3>Top Uploaders Leaderboard</h3>
+<div id="leaderboard"></div>
+</div>
+
+<div class="card">
+<h3>Recently Uploaded</h3>
+<div id="recentMaterials"></div>
+</div>
+
+<div class="card">
+<h3>My Favorite Materials</h3>
+<div id="favoriteMaterials"></div>
+</div>
+
+<div class="card">
+<h3>Upload Material</h3>
+<input id="title" placeholder="Title">
+<input id="subject" placeholder="Subject">
+<input id="tags" placeholder="Tags (comma separated)">
+<input type="file" id="file">
+<button onclick="uploadMaterial()">Upload</button>
+</div>
+
+<div class="card">
+<h3>Available Materials</h3>
+<input id="search" placeholder="Search materials..." onkeyup="searchMaterial()">
+<div id="allMaterials"></div>
+</div>
+
+<!-- Discussion Board -->
+<div class="card">
+<h3>Discussion Board</h3>
+
+<input id="msgInput" placeholder="Write a message...">
+<button onclick="sendMessage()">Send</button>
+
+<div id="messagesArea"></div>
+
+</div>
+</div>
+
+<script>
+function loadTheme(){
+
+let theme = localStorage.getItem("theme");
+
+if(theme === "dark"){
+document.body.classList.add("dark");
+}
+
+}
+
+loadTheme();
+function toggleTheme(){
+
+document.body.classList.toggle("dark");
+
+if(document.body.classList.contains("dark")){
+localStorage.setItem("theme","dark");
+}else{
+localStorage.setItem("theme","light");
+}
+
+}
+async function loadLeaderboard(){
+
+let res = await fetch("/leaderboard");
+
+let data = await res.json();
+
+let area = document.getElementById("leaderboard");
+
+area.innerHTML="";
+
+data.forEach((u,i)=>{
+area.innerHTML += `
+<p class="material-item">
+${i+1}. ${u._id} — Uploads: ${u.uploads}
+</p>
+`;
+});
+
+}
+async function loadFavorites(){
+
+let email = localStorage.getItem("userEmail");
+
+let res = await fetch("/my-favorites/"+email);
+
+let data = await res.json();
+
+let area = document.getElementById("favoriteMaterials");
+
+area.innerHTML="";
+
+data.forEach(m=>{
+area.innerHTML += `
+<div class="material-item">
+  <span>${m.title} (${m.subject})</span>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="previewMaterial('${m._id}')">Open</button>
+    <button onclick="downloadMaterial('${m._id}')">Download</button>
+  </div>
+</div>
+`;
+});
+
+}
+async function favoriteMaterial(id){
+
+let email = localStorage.getItem("userEmail");
+
+await fetch("/favorite/"+id,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({email})
+});
+
+alert("Added to Favorites");
+
+}
+async function loadRecentMaterials(){
+
+let res = await fetch("/recent-materials");
+
+let data = await res.json();
+
+let area = document.getElementById("recentMaterials");
+
+area.innerHTML="";
+
+data.forEach(m=>{
+area.innerHTML += `
+<div class="material-item">
+  <span>${m.title} (${m.subject})</span>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="previewMaterial('${m._id}')">Open</button>
+    <button onclick="downloadMaterial('${m._id}')">Download</button>
+  </div>
+</div>
+`;
+});
+
+}
+function togglePassword(){
+
+let pass = document.getElementById("password");
+let eye = document.getElementById("eyeIcon");
+
+if(pass.type === "password"){
+pass.type = "text";
+eye.innerHTML = "🙈";
+}
+else{
+pass.type = "password";
+eye.innerHTML = "👁️";
+}
+}
+async function registerUser(){
+
+ const name = document.getElementById("name").value.trim();
+ const email = document.getElementById("email").value.trim();
+ const password = document.getElementById("password").value;
+
+ if(!name){
+  alert("Enter your name");
+  return;
+ }
+
+ if(!email.includes("@")){
+   alert("Enter valid email");
+   return;
+ }
+
+ if(password.length < 6){
+   alert("Password must be at least 6 characters");
+   return;
+ }
+
+ const res = await fetch("/register",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({name,email,password})
+ });
+
+ const msg = await res.text();
+ alert(msg);
+
+ if(res.ok){
+   localStorage.setItem("userName", name);
+ }
+}
+async function loginUser(){
+ const email = document.getElementById("email").value;
+ const password = document.getElementById("password").value;
+ if(!email.includes("@")){
+  alert("Enter valid email");
+  return;
+  }
+  if(password.length < 6){
+  alert("Password must be at least 6 characters");
+  return;
+  }
+  const res = await fetch("/login",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({email,password})
+ });
+if(res.ok){
+
+const data = await res.json();
+
+localStorage.setItem("userEmail", data.email);
+localStorage.setItem("userName", data.name);
+
+showDashboard(data.name);
+
+}
+   else {
+   alert("Invalid login");
+ }
+}
+
+function showDashboard(name){
+ document.getElementById("login").style.display="none";
+ document.getElementById("dashboard").style.display="block";
+ document.getElementById("profileName").innerText=name;
+ document.querySelector(".hero h2").innerText = "Welcome to LearnHub, " + name;
+ document.getElementById("avatarText").innerText=name[0].toUpperCase();
+ loadStats();
+ loadMaterials();
+ loadMyUploads(localStorage.getItem("userEmail"));
+ loadMessages();
+ loadRecentMaterials();
+ loadFavorites();
+ loadLeaderboard();
+}
+
+function logout(){
+ localStorage.removeItem("userEmail");
+ localStorage.removeItem("userName");
+ location.reload();
+}
+
+async function uploadMaterial(){
+
+ const title = document.getElementById("title").value;
+ const subject = document.getElementById("subject").value;
+ const tags = document.getElementById("tags").value;
+ const file = document.getElementById("file").files[0];
+
+ if(!title || !subject){
+   alert("Title and Subject are required");
+   return;
+ }
+
+ if(!file){
+   alert("Please select a file");
+   return;
+ }
+ const allowed = ["pdf","doc","docx","ppt","pptx"];
+
+let ext = file.name.split(".").pop().toLowerCase();
+
+if(!allowed.includes(ext)){
+  alert("Only PDF, DOC, DOCX, PPT, PPTX files allowed");
+  return;
+}
+ const formData = new FormData();
+ formData.append("title", title);
+ formData.append("subject", subject);
+ formData.append("tags", JSON.stringify(tags.split(",")));
+ formData.append("file", file);
+ formData.append("uploader", localStorage.getItem("userEmail"));
+ const res = await fetch("/add-material",{
+   method:"POST",
+   body:formData
+ });
+ alert(await res.text());
+ loadMaterials();
+ loadStats();
+ loadMyUploads(localStorage.getItem("userEmail"));
+ loadRecentMaterials();
+ loadTopMaterials();
+ loadFavorites();
+ loadLeaderboard();
+}
+
+async function loadStats(){
+ let res = await fetch("/stats");
+ let data = await res.json();
+ document.getElementById("totalMat").innerText = data.totalMaterials;
+ document.getElementById("totalDownloads").innerText = data.totalDownloads;
+}
+
+async function loadMyUploads(email){
+ let res = await fetch("/my-uploads/"+email);
+ let data = await res.json();
+ document.getElementById("myUploads").innerText = data.count;
+}
+
+async function loadMaterials(){
+ let res = await fetch("/materials");
+ let data = await res.json();
+ let area = document.getElementById("allMaterials");
+ area.innerHTML="";
+ data.forEach(mat=>{
+ area.innerHTML += `
+<div class="material-item">
+  <span>📘 <b>${mat.title}</b> (${mat.subject}) - Downloads: ${mat.downloads || 0}</span>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="previewMaterial('${mat._id}')">Open</button>
+    <button onclick="downloadMaterial('${mat._id}')">Download</button>
+    <button onclick="favoriteMaterial('${mat._id}')">❤️</button>
+    ${mat.uploader===localStorage.getItem("userEmail") ? 
+    `<button onclick="deleteMaterial('${mat._id}')">Delete</button>` : ""}
+  </div>
+</div>`;
+ 
+ });
+}
+
+
+async function searchMaterial(){
+
+let q = document.getElementById("search").value;
+if(q===""){
+loadMaterials();
+return;
+}
+let res = await fetch("/search?q="+q);
+let data = await res.json();
+
+let area = document.getElementById("allMaterials");
+
+area.innerHTML="";
+
+data.forEach(mat=>{
+
+area.innerHTML+=`
+<div class="material-item">
+  <span>📘 <b>${mat.title}</b> (${mat.subject})</span>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="previewMaterial('${mat._id}')">Open</button>
+    <button onclick="downloadMaterial('${mat._id}')">Download</button>
+  </div>
+</div>
+`;
+
+});
+}
+function previewMaterial(id){
+ window.open("/file/" + id, "_blank");
+}
+function downloadMaterial(id){
+ window.open("/download/"+id, "_blank");
+}
+
+async function deleteMaterial(id){
+
+if(!confirm("Delete this material?")) return;
+
+let email = localStorage.getItem("userEmail");
+
+let res = await fetch("/delete/"+id+"?email="+encodeURIComponent(email),{
+method:"DELETE"
+});
+
+alert(await res.text());
+
+loadMaterials();
+loadStats();
+loadMyUploads(localStorage.getItem("userEmail"));
+loadRecentMaterials();
+loadTopMaterials();
+loadFavorites();
+loadLeaderboard();
+
+}
+window.onload = function(){
+
+const email = localStorage.getItem("userEmail");
+const name = localStorage.getItem("userName");
+
+if(email && name){
+
+showDashboard(name);
+
+document.getElementById("authLinks").style.display="none";
+document.getElementById("logoutLink").style.display="inline";
+
+}else{
+
+document.getElementById("login").style.display="block";
+document.getElementById("dashboard").style.display="none";
+
+}
+
+};
+
+async function loadMessages(){
+console.log("Dashboard loading...");
+
+let res = await fetch("/messages");
+
+let data = await res.json();
+
+let area = document.getElementById("messagesArea");
+
+area.innerHTML="";
+
+data.forEach(m=>{
+let currentUser = localStorage.getItem("userName");
+
+let cls = m.user === currentUser ? "message myMsg" : "message otherMsg";
+
+area.innerHTML += `
+<div class="${cls}">
+<b>${m.user}</b><br>
+${m.message}
+${m.user === currentUser ? `<button onclick="deleteMessage('${m._id}')">Delete</button>` : ""}
+</div>
+`;
+});
+}
+async function sendMessage(){
+
+let msg = document.getElementById("msgInput").value.trim();
+let user = localStorage.getItem("userName");
+
+if(!msg){
+  alert("Please write a message");
+  return;
+}
+
+await fetch("/add-message",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({user,message:msg})
+});
+
+document.getElementById("msgInput").value="";
+
+loadMessages();
+
+}
+async function deleteMessage(id){
+
+if(!confirm("Delete this message?")) return;
+
+await fetch("/delete-message/"+id,{
+method:"DELETE"
+});
+
+setTimeout(()=>{
+loadMessages();
+},200);
+
+}
+
+loadMessages();
+
+setInterval(loadMessages,5000);
+let msgBox = document.getElementById("msgInput");
+
+if(msgBox){
+msgBox.addEventListener("keypress", function(e){
+if(e.key === "Enter"){
+sendMessage();
+}
+});
+}
+async function loadOnlineUsers(){
+
+let res = await fetch("/online-users");
+
+let data = await res.json();
+
+document.getElementById("onlineUsers").innerText = data.count;
+
+}
+
+loadOnlineUsers();
+
+setInterval(loadOnlineUsers,5000);
+
+async function loadTopMaterials(){
+
+let res = await fetch("/top-materials");
+
+let data = await res.json();
+
+let area = document.getElementById("topMaterials");
+
+area.innerHTML="";
+
+data.forEach(m=>{
+area.innerHTML += `
+<div class="material-item">
+  <span>${m.title} (${m.downloads} downloads)</span>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="previewMaterial('${m._id}')">Open</button>
+    <button onclick="downloadMaterial('${m._id}')">Download</button>
+    ${m.uploader===localStorage.getItem("userEmail") ?
+    `<button onclick="deleteMaterial('${m._id}')">Delete</button>` : ""}
+  </div>
+</div>
+`;
+});
+}
+loadTopMaterials();
+</script>
+
+</body>
+</html>

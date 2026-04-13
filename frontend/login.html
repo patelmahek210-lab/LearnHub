@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login - LearnHub</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<nav>
+<a href="index.html">Home</a> |
+<a href="about.html">About</a> |
+<a href="contact.html">Contact</a> |
+
+<span id="authLinks">
+<a href="login.html">Login</a> |
+<a href="register.html">Register</a>
+</span>
+
+<span id="logoutLink" style="display:none;">
+<a href="#" onclick="logout()">Logout</a>
+</span>
+
+</nav>
+<hr>
+<h2>Login to LearnHub</h2>
+
+<div class="login-box">
+
+<input type="email" id="email" placeholder="Enter Email">
+
+<div style="position:relative;width:100%;">
+<input type="password" id="password" placeholder="Enter Password" style="width:100%;padding-right:35px;">
+<span onclick="togglePassword()" id="eyeIcon" style="position:absolute;right:10px;top:8px;cursor:pointer;">👁️</span>
+</div>
+
+
+<button onclick="login()">Login</button>
+
+<p>Don't have account? <a href="register.html">Register</a></p>
+<script>
+function togglePassword(){
+
+let pass = document.getElementById("password");
+let eye = document.getElementById("eyeIcon");
+
+if(pass.type === "password"){
+pass.type = "text";
+eye.innerHTML = "🙈";
+}
+else{
+pass.type = "password";
+eye.innerHTML = "👁️";
+}
+
+}
+
+async function login(){
+
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+if(!email.includes("@")){
+  alert("Enter valid email");
+  return;
+}
+
+if(password.length < 6){
+  alert("Password must be at least 6 characters");
+  return;
+}
+
+const res=await fetch("/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({email,password})
+});
+
+let data;
+
+try{
+data = await res.json();
+}catch{
+alert("Login error");
+return;
+}
+
+alert(data.message);
+
+if(res.ok && data.message==="Login successful"){
+localStorage.setItem("userEmail",data.email);
+localStorage.setItem("userName",data.name);
+window.location.href="index.html";
+}
+
+}
+window.onload = function(){
+
+let user = localStorage.getItem("userEmail");
+
+if(user){
+document.getElementById("authLinks").style.display="none";
+document.getElementById("logoutLink").style.display="inline";
+}
+
+};
+
+function logout(){
+localStorage.removeItem("userEmail");
+localStorage.removeItem("userName");
+window.location.href="index.html";
+}
+
+</script>
+
+</body>
+</html>

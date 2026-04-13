@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Register - LearnHub</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<nav>
+<a href="index.html">Home</a> |
+<a href="about.html">About</a> |
+<a href="contact.html">Contact</a> |
+
+<span id="authLinks">
+<a href="login.html">Login</a> |
+<a href="register.html">Register</a>
+</span>
+
+<span id="logoutLink" style="display:none;">
+<a href="#" onclick="logout()">Logout</a>
+</span>
+
+</nav>
+<hr>
+<h2>Create Account</h2>
+
+<div class="register-box">
+
+<input type="text" id="name" placeholder="Enter your name">
+
+<input type="email" id="email" placeholder="Enter Email">
+
+<input type="password" id="password" placeholder="Enter Password">
+
+<button onclick="register()">Register</button>
+
+<p>Already have account? <a href="login.html">Login</a></p>
+
+</div>
+<script>
+
+async function register(){
+
+const name=document.getElementById("name").value.trim();
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+if(!name){
+  alert("Enter your name");
+  return;
+}
+
+if(!email.includes("@")){
+  alert("Enter valid email");
+  return;
+}
+
+if(password.length < 6){
+  alert("Password must be at least 6 characters");
+  return;
+}
+
+const res=await fetch("/register",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name,email,password})
+});
+
+const msg = await res.text();
+alert(msg);
+
+if(res.ok){
+  window.location.href="login.html";
+}
+}
+window.onload = function(){
+
+let user = localStorage.getItem("userEmail");
+
+if(user){
+document.getElementById("authLinks").style.display="none";
+document.getElementById("logoutLink").style.display="inline";
+}
+
+};
+
+function logout(){
+localStorage.removeItem("userEmail");
+localStorage.removeItem("userName");
+window.location.href="index.html";
+}
+</script>
+
+</body>
+</html>

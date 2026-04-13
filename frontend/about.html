@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>About Us - LearnHub</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+<a href="index.html">Home</a> |
+<a href="about.html">About</a> |
+<a href="contact.html">Contact</a> |
+
+<span id="authLinks">
+<a href="login.html">Login</a> |
+<a href="register.html">Register</a>
+</span>
+
+<span id="logoutLink" style="display:none;">
+<a href="#" onclick="logout()">Logout</a>
+</span>
+</nav>
+
+<hr>
+<h1>About LearnHub</h1>
+<p>
+LearnHub is a platform where students can upload and download study materials easily.
+Our goal is to help students share knowledge and learn together.
+</p>
+
+<p>
+Students can search notes, upload materials and access useful resources anytime.
+</p>
+
+<a href="index.html">Back to Home</a>
+<script>
+
+window.onload = function(){
+
+let user = localStorage.getItem("userEmail");
+
+if(user){
+document.getElementById("authLinks").style.display="none";
+document.getElementById("logoutLink").style.display="inline";
+}
+
+}
+
+function logout(){
+localStorage.removeItem("userEmail");
+localStorage.removeItem("userName");
+window.location.href="index.html";
+}
+</script>
+</body>
+</html>
