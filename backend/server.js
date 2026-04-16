@@ -21,10 +21,9 @@ app.get("/", (req, res) => {
 });
 
 /* ===== MongoDB ===== */
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect("mongodb://127.0.0.1:27017/learnhub")
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
-
 /* ===== MODELS ===== */
 const User = mongoose.model("User", {
 	name: String,
@@ -94,6 +93,17 @@ app.post("/login", async (req, res) => {
     email: user.email
   });
 });
+app.post("/logout", (req, res) => {
+  const { email } = req.body;
+
+  if(email){
+    onlineUsers.delete(email);
+  }
+
+  req.session.destroy(() => {
+    res.send("Logged out");
+  });
+});
 /* ===== ADD MATERIAL ===== */
 app.post("/add-material", upload.single("file"), async (req, res) => {
   try {
@@ -156,9 +166,8 @@ app.get("/download/:id", async (req, res) => {
       return res.status(404).send("File not found");
     }
 
-    await Material.findByIdAndUpdate(req.params.id, {
-      $inc: { downloads: 1 }
-    });
+    mat.downloads += 1;
+    await mat.save();
 
     res.download(path.join(__dirname, "uploads", mat.file));
   } catch (err) {
@@ -228,12 +237,9 @@ res.json(msgs);
 
 });
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
 });
-
 /* ===== DELETE MESSAGE ===== */
 app.delete("/delete-message/:id", async (req, res) => {
 
@@ -322,17 +328,28 @@ res.json(recent);
 /* ===== FAVORITE MATERIAL ===== */
 app.post("/favorite/:id", async (req,res)=>{
 
-const email = req.body.email;
-const id = req.params.id;
+  const email = req.body.email;
+  const id = req.params.id;
 
-let mat = await Material.findById(id);
+  let mat = await Material.findById(id);
 
-if(!mat.favorites.includes(email)){
-mat.favorites.push(email);
-await mat.save();
-}
+  if(!mat){
+    return res.status(404).json({msg:"Material not found"});
+  }
 
-res.json({msg:"Added to favorites"});
+  if(!mat.favorites){
+    mat.favorites = [];
+  }
+
+  if(mat.favorites.includes(email)){
+    mat.favorites = mat.favorites.filter(favEmail => favEmail !== email);
+    await mat.save();
+    return res.json({msg:"Removed from favorites", isFavorite:false});
+  } else {
+    mat.favorites.push(email);
+    await mat.save();
+    return res.json({msg:"Added to favorites", isFavorite:true});
+  }
 
 });
 

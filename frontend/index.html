@@ -141,26 +141,24 @@
 
 <script>
 function loadTheme(){
+  let theme = localStorage.getItem("theme") || "dark";
 
-let theme = localStorage.getItem("theme");
-
-if(theme === "dark"){
-document.body.classList.add("dark");
-}
-
+  document.body.classList.remove("dark", "light");
+  document.body.classList.add(theme);
 }
 
 loadTheme();
+
 function toggleTheme(){
-
-document.body.classList.toggle("dark");
-
-if(document.body.classList.contains("dark")){
-localStorage.setItem("theme","dark");
-}else{
-localStorage.setItem("theme","light");
-}
-
+  if(document.body.classList.contains("dark")){
+    document.body.classList.remove("dark");
+    document.body.classList.add("light");
+    localStorage.setItem("theme","light");
+  } else {
+    document.body.classList.remove("light");
+    document.body.classList.add("dark");
+    localStorage.setItem("theme","dark");
+  }
 }
 async function loadLeaderboard(){
 
@@ -192,7 +190,10 @@ let data = await res.json();
 let area = document.getElementById("favoriteMaterials");
 
 area.innerHTML="";
-
+if(data.length === 0){
+  area.innerHTML = "<p>No favorite materials yet.</p>";
+  return;
+}
 data.forEach(m=>{
 area.innerHTML += `
 <div class="material-item">
@@ -200,6 +201,7 @@ area.innerHTML += `
   <div style="display:flex; gap:8px; flex-wrap:wrap;">
     <button onclick="previewMaterial('${m._id}')">Open</button>
     <button onclick="downloadMaterial('${m._id}')">Download</button>
+    <button onclick="favoriteMaterial('${m._id}')">Remove</button>
   </div>
 </div>
 `;
@@ -208,16 +210,23 @@ area.innerHTML += `
 }
 async function favoriteMaterial(id){
 
-let email = localStorage.getItem("userEmail");
+  let email = localStorage.getItem("userEmail");
 
-await fetch("/favorite/"+id,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({email})
-});
+  let res = await fetch("/favorite/"+id,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email})
+  });
 
-alert("Added to Favorites");
+  let data = await res.json();
 
+  showToast(data.msg);
+
+  loadMaterials();
+  loadFavorites();
+  loadRecentMaterials();
+  loadTopMaterials();
+  loadLeaderboard();
 }
 async function loadRecentMaterials(){
 
@@ -263,17 +272,17 @@ async function registerUser(){
  const password = document.getElementById("password").value;
 
  if(!name){
-  alert("Enter your name");
+  showToast("Enter your name");
   return;
  }
 
  if(!email.includes("@")){
-   alert("Enter valid email");
+   showToast("Enter valid email");
    return;
  }
 
  if(password.length < 6){
-   alert("Password must be at least 6 characters");
+   showToast("Password must be at least 6 characters");
    return;
  }
 
@@ -284,7 +293,7 @@ async function registerUser(){
  });
 
  const msg = await res.text();
- alert(msg);
+ showToast(msg);
 
  if(res.ok){
    localStorage.setItem("userName", name);
@@ -294,11 +303,11 @@ async function loginUser(){
  const email = document.getElementById("email").value;
  const password = document.getElementById("password").value;
  if(!email.includes("@")){
-  alert("Enter valid email");
+  showToast("Enter valid email");
   return;
   }
   if(password.length < 6){
-  alert("Password must be at least 6 characters");
+  showToast("Password must be at least 6 characters");
   return;
   }
   const res = await fetch("/login",{
@@ -317,7 +326,7 @@ showDashboard(data.name);
 
 }
    else {
-   alert("Invalid login");
+   showToast("Invalid login");
  }
 }
 
@@ -336,12 +345,19 @@ function showDashboard(name){
  loadLeaderboard();
 }
 
-function logout(){
- localStorage.removeItem("userEmail");
- localStorage.removeItem("userName");
- location.reload();
-}
+async function logout(){
+  let email = localStorage.getItem("userEmail");
 
+  await fetch("/logout",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email})
+  });
+
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userName");
+  location.reload();
+}
 async function uploadMaterial(){
 
  const title = document.getElementById("title").value;
@@ -350,12 +366,12 @@ async function uploadMaterial(){
  const file = document.getElementById("file").files[0];
 
  if(!title || !subject){
-   alert("Title and Subject are required");
+   showToast("Title and Subject are required");
    return;
  }
 
  if(!file){
-   alert("Please select a file");
+   showToast("Please select a file");
    return;
  }
  const allowed = ["pdf","doc","docx","ppt","pptx"];
@@ -363,7 +379,7 @@ async function uploadMaterial(){
 let ext = file.name.split(".").pop().toLowerCase();
 
 if(!allowed.includes(ext)){
-  alert("Only PDF, DOC, DOCX, PPT, PPTX files allowed");
+  showToast("Only PDF, DOC, DOCX, PPT, PPTX files allowed");
   return;
 }
  const formData = new FormData();
@@ -376,7 +392,7 @@ if(!allowed.includes(ext)){
    method:"POST",
    body:formData
  });
- alert(await res.text());
+ showToast(await res.text());
  loadMaterials();
  loadStats();
  loadMyUploads(localStorage.getItem("userEmail"));
@@ -411,16 +427,18 @@ async function loadMaterials(){
   <div style="display:flex; gap:8px; flex-wrap:wrap;">
     <button onclick="previewMaterial('${mat._id}')">Open</button>
     <button onclick="downloadMaterial('${mat._id}')">Download</button>
-    <button onclick="favoriteMaterial('${mat._id}')">❤️</button>
-    ${mat.uploader===localStorage.getItem("userEmail") ? 
-    `<button onclick="deleteMaterial('${mat._id}')">Delete</button>` : ""}
+
+    <button onclick="favoriteMaterial('${mat._id}')">
+      ${mat.favorites && mat.favorites.includes(localStorage.getItem("userEmail")) ? "Dislike" : "Like"}
+    </button>
+
+    ${mat.uploader === localStorage.getItem("userEmail") ? 
+      `<button onclick="deleteMaterial('${mat._id}')">Delete</button>` : ""
+    }
   </div>
 </div>`;
- 
- });
+});
 }
-
-
 async function searchMaterial(){
 
 let q = document.getElementById("search").value;
@@ -453,7 +471,17 @@ function previewMaterial(id){
  window.open("/file/" + id, "_blank");
 }
 function downloadMaterial(id){
- window.open("/download/"+id, "_blank");
+  window.open("/download/" + id, "_blank");
+
+  setTimeout(() => {
+    loadStats();
+    loadMaterials();
+    loadTopMaterials();
+    loadRecentMaterials();
+    loadFavorites();
+    loadLeaderboard();
+    loadMyUploads(localStorage.getItem("userEmail"));
+  }, 1500);
 }
 
 async function deleteMaterial(id){
@@ -466,7 +494,7 @@ let res = await fetch("/delete/"+id+"?email="+encodeURIComponent(email),{
 method:"DELETE"
 });
 
-alert(await res.text());
+showToast(await res.text());
 
 loadMaterials();
 loadStats();
@@ -529,7 +557,7 @@ let msg = document.getElementById("msgInput").value.trim();
 let user = localStorage.getItem("userName");
 
 if(!msg){
-  alert("Please write a message");
+  showToast("Please write a message");
   return;
 }
 
@@ -557,19 +585,22 @@ loadMessages();
 },200);
 
 }
+window.addEventListener("load", () => {
 
-loadMessages();
+  loadMessages();
+  setInterval(loadMessages,5000);
 
-setInterval(loadMessages,5000);
-let msgBox = document.getElementById("msgInput");
+  let msgBox = document.getElementById("msgInput");
 
-if(msgBox){
-msgBox.addEventListener("keypress", function(e){
-if(e.key === "Enter"){
-sendMessage();
-}
+  if(msgBox){
+    msgBox.addEventListener("keypress", function(e){
+      if(e.key === "Enter"){
+        sendMessage();
+      }
+    });
+  }
+
 });
-}
 async function loadOnlineUsers(){
 
 let res = await fetch("/online-users");
@@ -579,10 +610,10 @@ let data = await res.json();
 document.getElementById("onlineUsers").innerText = data.count;
 
 }
-
-loadOnlineUsers();
-
-setInterval(loadOnlineUsers,5000);
+window.addEventListener("load", () => {
+  loadOnlineUsers();
+  setInterval(loadOnlineUsers,5000);
+});
 
 async function loadTopMaterials(){
 
@@ -608,8 +639,38 @@ area.innerHTML += `
 `;
 });
 }
-loadTopMaterials();
+window.addEventListener("load", () => {
+  loadTopMaterials();
+});
 </script>
+<link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+<script type="module">
+	import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
 
+	createChat({
+		webhookUrl: 'https://mansi-210.app.n8n.cloud/webhook/e37d4e4d-bdd9-4d1b-a401-4b94cad42815/chat'
+	});
+	function showToast(msg){
+  let t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
+
+  setTimeout(()=>{
+    t.style.display = "none";
+  },2000);
+}
+</script>
+<div id="toast" style="
+position: fixed;
+bottom: 20px;
+right: 20px;
+background: #2dd4bf;
+color: black;
+padding: 10px 20px;
+border-radius: 8px;
+display: none;
+z-index: 999;
+font-weight: bold;
+"></div>
 </body>
 </html>

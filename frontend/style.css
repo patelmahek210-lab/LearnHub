@@ -692,3 +692,55 @@ button, .btn {
   nav a { margin: 0 7px; font-size: 13px; }
   .container { padding: 16px; }
 }
+body.light {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  color: #0f172a;
+}
+
+body.light nav {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.light .card,
+body.light .hero,
+body.light .navbar,
+body.light .stat-card,
+body.light .login-container,
+body.light .login-box,
+body.light .register-box {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.light h1,
+body.light h2,
+body.light h3,
+body.light h4,
+body.light h5,
+body.light h6,
+body.light strong,
+body.light span,
+body.light label,
+body.light p,
+body.light small,
+body.light a {
+  color: #0f172a;
+}
+
+body.light input,
+body.light textarea,
+body.light select {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+}
+
+body.light .material-item,
+body.light .message.otherMsg,
+body.light #messagesArea {
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
