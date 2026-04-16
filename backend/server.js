@@ -21,14 +21,21 @@ app.get("/", (req, res) => {
 });
 
 /* ===== MongoDB ===== */
+let isDbConnected = false;
+
 if(process.env.MONGODB_URI){
   mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+    .then(() => {
+      console.log("MongoDB Connected");
+      isDbConnected = true;
+    })
+    .catch(err => {
+      console.log(err);
+      isDbConnected = false;
+    });
 } else {
   console.log("MongoDB not connected (Render mode)");
 }
-const isDbConnected = !!process.env.MONGODB_URI;
 /* ===== MODELS ===== */
 const User = mongoose.model("User", {
 	name: String,
