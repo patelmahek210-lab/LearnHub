@@ -21,9 +21,13 @@ app.get("/", (req, res) => {
 });
 
 /* ===== MongoDB ===== */
-mongoose.connect("mongodb://127.0.0.1:27017/learnhub")
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
+if(process.env.MONGODB_URI){
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.log(err));
+} else {
+  console.log("MongoDB not connected (Render mode)");
+}
 /* ===== MODELS ===== */
 const User = mongoose.model("User", {
 	name: String,
@@ -237,7 +241,7 @@ res.json(msgs);
 
 });
 
-app.listen(5000, () => {
+app.listen(process.env.PORT || 5000, () => {
   console.log("Server running on port 5000");
 });
 /* ===== DELETE MESSAGE ===== */
