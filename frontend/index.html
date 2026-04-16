@@ -140,6 +140,19 @@
 </div>
 
 <script>
+function showToast(msg){
+  let t = document.getElementById("toast");
+  if(!t){
+    alert(msg);
+    return;
+  }
+  t.innerText = msg;
+  t.style.display = "block";
+
+  setTimeout(()=>{
+    t.style.display = "none";
+  },2000);
+}
 function loadTheme(){
   let theme = localStorage.getItem("theme") || "dark";
 
@@ -649,15 +662,7 @@ window.addEventListener("load", () => {
 	createChat({
 		webhookUrl: 'https://mansi-210.app.n8n.cloud/webhook/e37d4e4d-bdd9-4d1b-a401-4b94cad42815/chat'
 	});
-	function showToast(msg){
-  let t = document.getElementById("toast");
-  t.innerText = msg;
-  t.style.display = "block";
-
-  setTimeout(()=>{
-    t.style.display = "none";
-  },2000);
-}
+</script>
 </script>
 <div id="toast" style="
 position: fixed;

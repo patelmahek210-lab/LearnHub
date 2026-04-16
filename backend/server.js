@@ -28,6 +28,7 @@ if(process.env.MONGODB_URI){
 } else {
   console.log("MongoDB not connected (Render mode)");
 }
+const isDbConnected = !!process.env.MONGODB_URI;
 /* ===== MODELS ===== */
 const User = mongoose.model("User", {
 	name: String,
@@ -64,21 +65,34 @@ const upload = multer({ storage });
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
-  if(!name || !email || !password)
+  if(!name || !email || !password){
     return res.status(400).send("Enter name, email & password");
+  }
+
+  if(!isDbConnected){
+    return res.send("Live demo mode: register disabled without cloud database");
+  }
 
   const existing = await User.findOne({ email });
-  if(existing)
+  if(existing){
     return res.status(400).send("User already exists");
+  }
 
   await new User({ name, email, password }).save();
   res.send("Registered Successfully");
 });
 
-
 /* ===== LOGIN ===== */
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
+
+  if(!isDbConnected){
+    return res.json({
+      message: "Login successful",
+      name: "Demo User",
+      email: email || "demo@learnhub.com"
+    });
+  }
 
   const user = await User.findOne({ email });
 
@@ -88,7 +102,6 @@ app.post("/login", async (req, res) => {
     return res.status(401).send("Invalid login");
 
   req.session.userEmail = user.email;
-
   onlineUsers.add(email);
 
   res.json({
