@@ -240,7 +240,9 @@ const msgs = await Message.find().sort({_id:-1});
 res.json(msgs);
 
 });
-
+app.get("/online-users", (req,res)=>{
+  res.json({count: onlineUsers.size});
+});
 app.listen(process.env.PORT || 5000, () => {
   console.log("Server running on port 5000");
 });

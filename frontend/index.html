@@ -343,8 +343,9 @@ function showDashboard(name){
  loadRecentMaterials();
  loadFavorites();
  loadLeaderboard();
+ loadTopMaterials();
+ loadOnlineUsers();
 }
-
 async function logout(){
   let email = localStorage.getItem("userEmail");
 
@@ -585,22 +586,7 @@ loadMessages();
 },200);
 
 }
-window.addEventListener("load", () => {
 
-  loadMessages();
-  setInterval(loadMessages,5000);
-
-  let msgBox = document.getElementById("msgInput");
-
-  if(msgBox){
-    msgBox.addEventListener("keypress", function(e){
-      if(e.key === "Enter"){
-        sendMessage();
-      }
-    });
-  }
-
-});
 async function loadOnlineUsers(){
 
 let res = await fetch("/online-users");
@@ -610,10 +596,7 @@ let data = await res.json();
 document.getElementById("onlineUsers").innerText = data.count;
 
 }
-window.addEventListener("load", () => {
-  loadOnlineUsers();
-  setInterval(loadOnlineUsers,5000);
-});
+
 
 async function loadTopMaterials(){
 
@@ -640,7 +623,23 @@ area.innerHTML += `
 });
 }
 window.addEventListener("load", () => {
-  loadTopMaterials();
+  let msgBox = document.getElementById("msgInput");
+
+  if(msgBox){
+    msgBox.addEventListener("keypress", function(e){
+      if(e.key === "Enter"){
+        sendMessage();
+      }
+    });
+  }
+
+  const email = localStorage.getItem("userEmail");
+  const name = localStorage.getItem("userName");
+
+  if(email && name){
+    setInterval(loadMessages,5000);
+    setInterval(loadOnlineUsers,5000);
+  }
 });
 </script>
 <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
